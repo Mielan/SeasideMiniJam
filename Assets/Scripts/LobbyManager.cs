@@ -22,6 +22,13 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public TextMeshProUGUI[] txtRoomInfo;
     public Button[] roomButton;
 
+    public Button playButton;
+    public TextMeshProUGUI txtWaiting;
+
+    ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable();
+
+    public GameObject roomSelectionUI;
+
     private void Awake()
     {
         PhotonNetwork.AutomaticallySyncScene = true;
@@ -40,6 +47,8 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             roomButton[i].onClick.RemoveAllListeners();
             roomButton[i].onClick.AddListener(()=> { EnterBattleGround(index); });
         }
+
+        playButton.onClick.AddListener(() => { OnPlayButton(); });
     }
 
     public void EnterBattleGround(int index)
@@ -53,9 +62,28 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        if (PhotonNetwork.IsMasterClient)
+        playerProperties["charID"] = PhotonNetwork.CurrentRoom.PlayerCount - 1;
+        playerProperties["name"] = PhotonNetwork.NickName;
+        PhotonNetwork.SetPlayerCustomProperties(playerProperties);
+        roomSelectionUI.SetActive(false);
+        txtWaiting.gameObject.SetActive(true);
+    }
+
+    private void Update()
+    {
+        if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount >= 2)
         {
-            PhotonNetwork.LoadLevel("4_Main");
+            txtWaiting.gameObject.SetActive(false);
+            playButton.gameObject.SetActive(true);
         }
+        else
+        {
+            playButton.gameObject.SetActive(false);
+        }
+    }
+
+    void OnPlayButton()
+    {
+        PhotonNetwork.LoadLevel("4_Main");
     }
 }

@@ -141,8 +141,10 @@ MonoBehaviour:
   volleyBallPos: {fileID: 5869290775386537435}
   handler: {fileID: 0}
   playerIndex: 0
+  playerScore: 0
   ballInHand: {fileID: 2363335613667005816}
   volleyPrefab: {fileID: 8177320485906066825, guid: 15237e52d3d342045ab46f1f3a42e3ca, type: 3}
+  maxJump: 2
 --- !u!54 &5869290777095663804
 Rigidbody:
   m_ObjectHideFlags: 0

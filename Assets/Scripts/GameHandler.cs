@@ -64,8 +64,6 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
     }
     IEnumerator StartGameIE()
     {
-        //AddVolleyBall();
-        //AddVolleyBall();
         while (time > 0)
         {
             txtTime.text = time.ToString();
@@ -82,6 +80,7 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
             new Vector3(Random.Range(topLeftLimit.position.x, bottomRightLimit.position.x), spawnY, Random.Range(topLeftLimit.position.z, bottomRightLimit.position.z)),
             Quaternion.identity
         );
+        volleyObj.GetComponent<VolleyBallCollider>().index = ball.Count;
         ball.Add(volleyObj);
     }
 
@@ -92,6 +91,7 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
             if(i < playerCount)
             {
                 txtScore[i].text = playerScore[i].ToString();
+                txtName[i].text = playerName[i];
             }
             playerScoreUI[i].SetActive(i < playerCount);
         }
@@ -101,13 +101,18 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
     {
         if(stream.IsWriting)
         {
-            // send stats
-            stream.SendNext(time);
+            if(PhotonNetwork.IsMasterClient)
+            {
+                stream.SendNext(time);
+            }
         }
         else
         {
-            time = (int)stream.ReceiveNext();
-            txtTime.text = time.ToString();
+            if (!PhotonNetwork.IsMasterClient)
+            {
+                time = (int)stream.ReceiveNext();
+                txtTime.text = time.ToString();
+            }
         }
     }
 

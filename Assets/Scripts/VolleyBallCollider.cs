@@ -7,6 +7,7 @@ public class VolleyBallCollider : MonoBehaviourPunCallbacks, IPunObservable
 {
     public int index;
     public bool isActive = false;
+    public int playerIndex;
     public GameObject thrower;
     public PhotonView view;
 
@@ -19,6 +20,7 @@ public class VolleyBallCollider : MonoBehaviourPunCallbacks, IPunObservable
             {
                 if (collision.gameObject != thrower)
                 {
+                    view.RPC("AddScore", RpcTarget.All);
                     collision.gameObject.GetComponent<PlayerController>().RespawnPlayer();
                 }
             }
@@ -33,8 +35,15 @@ public class VolleyBallCollider : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void BallOnHand(int i)
     {
+        playerIndex = i;
         thrower = GameHandler.GM.player[i];
-        isActive = true;
+    }
+
+    [PunRPC]
+    public void AddScore()
+    {
+        GameHandler.GM.playerScore[playerIndex] += 5;
+        GameHandler.GM.ShowPlayerScore();
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -42,10 +51,12 @@ public class VolleyBallCollider : MonoBehaviourPunCallbacks, IPunObservable
         if(stream.IsWriting)
         {
             stream.SendNext(index);
+            stream.SendNext(isActive);
         }
         else
         {
             index = (int)stream.ReceiveNext();
+            isActive = (bool)stream.ReceiveNext();
         }
     }
 }

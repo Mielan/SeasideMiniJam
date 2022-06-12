@@ -21,18 +21,27 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
     public GameHandler handler;
     public int playerIndex;
+    string playerName;
 
     PhotonView view;
+    public int playerScore;
     public GameObject ballInHand;
     public GameObject volleyPrefab;
 
+    float distToGround = 0;
+    int jumpCount = 0;
+    public int maxJump = 2;
+
+
     private void Start()
     {
+        distToGround = GetComponent<Collider>().bounds.extents.y;
         rb = GetComponent<Rigidbody>();
         view = GetComponent<PhotonView>();
 
         int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
-        playerIndex = playerCount - 1;
+        playerIndex = (int)PhotonNetwork.LocalPlayer.CustomProperties["charID"];
+        playerName = PhotonNetwork.LocalPlayer.CustomProperties["name"].ToString();
         handler = GameHandler.GM;
         GameHandler.GM.playerCount = playerCount;
         GameHandler.GM.ShowPlayerScore();
@@ -45,12 +54,29 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             x = Input.GetAxisRaw("Horizontal");
             z = Input.GetAxisRaw("Vertical");
             direction = new Vector3(x, 0, z).normalized;
-            if (Input.GetButtonDown("Jump"))
+            if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Q))
             {
-                rb.velocity = Vector3.up * jumpForce;
+                if (IsGrounded())
+                {
+                    rb.velocity = Vector3.up * jumpForce;
+                    jumpCount++;
+                }
+                else
+                {
+                    if(jumpCount < maxJump - 1)
+                    {
+                        rb.velocity = Vector3.up * jumpForce;
+                        jumpCount++;
+                    }
+                }
             }
 
-            if (Input.GetButtonDown("Fire1"))
+            if (IsGrounded())
+            {
+                jumpCount = 0;
+            }
+
+            if (Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Return))
             {
                 if (canGrabVolleyBall)
                 {
@@ -59,18 +85,17 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
                 if (holdingVolleyBall)
                 {
+                    holdingVolleyBall = false;
                     StartCoroutine(ThrowBallIE());
                 }
             }
-
         }
-
-        if (holdingVolleyBall && volleyBall != null)
-        {
-            volleyBall.transform.position = volleyBallPos.position;
-        }
-
         ballInHand.SetActive(holdingVolleyBall);
+    }
+
+    bool IsGrounded()
+    {
+        return Physics.Raycast(transform.position, -Vector3.up, distToGround + 0.1f);
     }
 
     IEnumerator GrabBallIE()
@@ -93,19 +118,18 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            GameHandler.GM.ball.RemoveAt(ballIndex);
             PhotonNetwork.Destroy(GameHandler.GM.ball[ballIndex]);
         }
     }
 
     IEnumerator ThrowBallIE()
     {
-        holdingVolleyBall = false;
         GameObject ball = PhotonNetwork.Instantiate(volleyPrefab.name, volleyBallPos.position, Quaternion.identity);
         ball.GetComponent<VolleyBallCollider>().BallOnPlayerHand(playerIndex);
-        yield return 0.05f;
+        ball.GetComponent<VolleyBallCollider>().thrower = gameObject;
         ball.GetComponent<Rigidbody>().AddForce((transform.forward + new Vector3(0, 0.25f, 0)) * 800);
-        volleyBall = null;
+        yield return null;
+        ball.GetComponent<VolleyBallCollider>().isActive = true;
     }
 
     private void FixedUpdate()
@@ -154,18 +178,23 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
     public void RespawnPlayer()
     {
-        view.RPC("ResetPlayer", RpcTarget.All);
+        view.RPC("ResetPlayer", RpcTarget.All, playerIndex);
     }
 
 
     // get called on  all instance of the viewID
     [PunRPC]
-    public void ResetPlayer()
+    public void ResetPlayer(int otherIndex)
     {
         if (handler == null)
         {
             handler = GameHandler.GM;
         }
+        GameHandler.GM.playerScore[otherIndex] -= 3;
+        if (GameHandler.GM.playerScore[otherIndex] < 0)
+            GameHandler.GM.playerScore[otherIndex] = 0;
+        GameHandler.GM.ShowPlayerScore();
+
         transform.position = new Vector3(Random.Range(handler.topLeftLimit.position.x, handler.bottomRightLimit.position.x),
             handler.spawnY, Random.Range(handler.topLeftLimit.position.z, handler.bottomRightLimit.position.z));
     }
@@ -177,12 +206,13 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             // sync data
             stream.SendNext(playerIndex);
             stream.SendNext(holdingVolleyBall);
-            stream.SendNext(canGrabVolleyBall);
+            stream.SendNext(playerName);
             if (GetComponent<Renderer>().material.color != GameHandler.GM.playerColor[playerIndex])
             {
                 GetComponent<Renderer>().material.color = GameHandler.GM.playerColor[playerIndex];
                 GameHandler.GM.player[playerIndex] = gameObject;
-                Debug.Log("Run");
+                GameHandler.GM.playerName[playerIndex] = playerName;
+                GameHandler.GM.ShowPlayerScore();
             }
         }
         else
@@ -190,12 +220,13 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             //we are reading
             playerIndex = (int)stream.ReceiveNext();
             holdingVolleyBall = (bool)stream.ReceiveNext();
-            canGrabVolleyBall = (bool)stream.ReceiveNext();
+            playerName = (string)stream.ReceiveNext();
             if (GetComponent<Renderer>().material.color != GameHandler.GM.playerColor[playerIndex])
             {
                 GetComponent<Renderer>().material.color = GameHandler.GM.playerColor[playerIndex];
                 GameHandler.GM.player[playerIndex] = gameObject;
-                Debug.Log("Run");
+                GameHandler.GM.playerName[playerIndex] = playerName;
+                GameHandler.GM.ShowPlayerScore();
             }
         }
     }

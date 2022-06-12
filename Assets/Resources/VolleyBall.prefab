@@ -131,6 +131,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   index: 0
   isActive: 0
+  playerIndex: 0
   thrower: {fileID: 0}
   view: {fileID: 257572066174930491}
 --- !u!135 &8177320485906066822
@@ -165,6 +166,7 @@ MonoBehaviour:
   OwnershipTransfer: 0
   observableSearch: 2
   ObservedComponents:
+  - {fileID: 8177320485906066823}
   - {fileID: 1053773865753815518}
   - {fileID: 9137829963008506925}
   sceneViewId: 0
