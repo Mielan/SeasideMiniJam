@@ -1,5 +1,35 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1659829203186864522
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 783870670864762483}
+  m_Layer: 0
+  m_Name: camPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &783870670864762483
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1659829203186864522}
+  m_LocalRotation: {x: -0, y: -0.953717, z: 0.30070576, w: 0}
+  m_LocalPosition: {x: 0, y: 1.9000001, z: 2.69}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 5869290777095663805}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5869290775386537432
 GameObject:
   m_ObjectHideFlags: 0
@@ -69,6 +99,7 @@ Transform:
   - {fileID: 5869290777245878253}
   - {fileID: 5869290777398672122}
   - {fileID: 5869290775386537435}
+  - {fileID: 783870670864762483}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
@@ -138,6 +169,7 @@ MonoBehaviour:
   jumpForce: 9
   canGrabVolleyBall: 0
   holdingVolleyBall: 0
+  canMove: 1
   volleyBallPos: {fileID: 5869290775386537435}
   handler: {fileID: 0}
   playerIndex: 0
@@ -145,6 +177,7 @@ MonoBehaviour:
   ballInHand: {fileID: 2363335613667005816}
   volleyPrefab: {fileID: 8177320485906066825, guid: 15237e52d3d342045ab46f1f3a42e3ca, type: 3}
   maxJump: 2
+  camPos: {fileID: 783870670864762483}
 --- !u!54 &5869290777095663804
 Rigidbody:
   m_ObjectHideFlags: 0

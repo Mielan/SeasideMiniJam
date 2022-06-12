@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
     public bool canGrabVolleyBall = false;
     public bool holdingVolleyBall = false;
+    public bool canMove = true;
     [SerializeField] private Transform volleyBallPos;
     GameObject volleyBall;
 
@@ -31,6 +32,8 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
     float distToGround = 0;
     int jumpCount = 0;
     public int maxJump = 2;
+
+    public Transform camPos;
 
 
     private void Start()
@@ -49,7 +52,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Update()
     {
-        if (view.IsMine)
+        if (view.IsMine && canMove)
         {
             x = Input.GetAxisRaw("Horizontal");
             z = Input.GetAxisRaw("Vertical");
@@ -160,8 +163,10 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 
         if (other.CompareTag("SeaShell"))
         {
-            handler.playerScore[playerIndex]++;
-            handler.ShowPlayerScore();
+            if(view.IsMine)
+            {
+                view.RPC("GetSeaShell", RpcTarget.All, playerIndex);
+            }
             Destroy(other.gameObject);
         }
     }
@@ -173,6 +178,13 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             canGrabVolleyBall = false;
             volleyBall = null;
         }
+    }
+
+    [PunRPC]
+    public void GetSeaShell(int i)
+    {
+        GameHandler.GM.playerScore[i]++;
+        GameHandler.GM.ShowPlayerScore();
     }
 
 
@@ -206,6 +218,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             // sync data
             stream.SendNext(playerIndex);
             stream.SendNext(holdingVolleyBall);
+            stream.SendNext(canMove);
             stream.SendNext(playerName);
             if (GetComponent<Renderer>().material.color != GameHandler.GM.playerColor[playerIndex])
             {
@@ -220,6 +233,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
             //we are reading
             playerIndex = (int)stream.ReceiveNext();
             holdingVolleyBall = (bool)stream.ReceiveNext();
+            canMove = (bool)stream.ReceiveNext();
             playerName = (string)stream.ReceiveNext();
             if (GetComponent<Renderer>().material.color != GameHandler.GM.playerColor[playerIndex])
             {

@@ -8,9 +8,12 @@ using UnityEngine.SceneManagement;
 public class StartingMenu : MonoBehaviour
 {
     [SerializeField] private Button[] menuButton;
+    public GameObject[] menuUI;
 
     private void Start()
     {
+        menuUI[0].SetActive(true);
+        menuUI[1].SetActive(false);
         AssignClickableObjects();
     }
 
@@ -30,6 +33,16 @@ public class StartingMenu : MonoBehaviour
         {
             case 0:
                 SceneManager.LoadScene("2_Loading");
+                break;
+
+            case 1:
+                menuUI[0].SetActive(false);
+                menuUI[1].SetActive(true);
+                break;
+
+            case 2:
+                menuUI[0].SetActive(true);
+                menuUI[1].SetActive(false);
                 break;
 
             default:

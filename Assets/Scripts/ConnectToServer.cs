@@ -12,9 +12,9 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     public GameObject enterNameUI;
     public Button[] alfabetButton;
     public Button continueButton;
+    public Button backButton;
     public TextMeshProUGUI txtName;
     string playerName = "";
-
 
     void Start()
     {
@@ -24,6 +24,7 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         txtName.text = "";
 
         continueButton.onClick.AddListener(() => { EnterLobby(); });
+        backButton.onClick.AddListener(() => { SceneManager.LoadScene("1_StartingMenu"); });
 
         for (int i = 0; i < alfabetButton.Length; i++)
         {
@@ -35,11 +36,14 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
 
     void OnClickAlfabet(int i)
     {
-        playerName += alfabetButton[i].GetComponent<TextMeshProUGUI>().text;
-        txtName.text = playerName;
-        if (playerName.Length >= 3)
+        if(playerName.Length < 10)
         {
-            continueButton.gameObject.SetActive(true);
+            playerName += alfabetButton[i].GetComponent<TextMeshProUGUI>().text;
+            txtName.text = playerName;
+            if (playerName.Length >= 3)
+            {
+                continueButton.gameObject.SetActive(true);
+            }
         }
     }
 
@@ -60,4 +64,5 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     {
         SceneManager.LoadScene("3_Lobby");
     }
+
 }

@@ -5,6 +5,10 @@ using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 using Photon.Realtime;
+using DG.Tweening;
+using UnityEngine.SceneManagement;
+
+using UnityEngine.Networking;
 
 public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -23,6 +27,7 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
 
     public static GameHandler GM;
     public GameObject volleyBall;
+    public GameObject seaShell;
 
     bool timeIsRunning;
     public TextMeshProUGUI txtTime;
@@ -32,6 +37,15 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
     public PhotonView view;
     public GameObject[] player = new GameObject[4];
     public List<GameObject> ball;
+    public TextMeshProUGUI winnerText;
+    int playerWinner = 0;
+
+
+
+    [SerializeField] private string URL = "https://sittingduckgames.com/Home/score/get_score.php";
+    private PlayerScore scores;
+    private string baseUtcOffset;
+
 
     private void Awake()
     {
@@ -47,6 +61,9 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Start()
     {
+        System.TimeZoneInfo localZone = System.TimeZoneInfo.Local;
+        baseUtcOffset = localZone.BaseUtcOffset.ToString();
+
         if (PhotonNetwork.IsMasterClient)
         {
             time = timeLimit;
@@ -69,8 +86,62 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
             txtTime.text = time.ToString();
             yield return new WaitForSeconds(1f);
             time--;
+            AddSeaShell();
+            AddSeaShell();
+            AddSeaShell();
             AddVolleyBall();
         }
+
+        view.RPC("CheckWinner", RpcTarget.All);
+        yield return new WaitForSeconds(1.5f);
+        Camera.main.transform.LookAt(player[playerWinner].transform.position);
+        yield return new WaitForSeconds(0.5f);
+        view.RPC("LeaveRoom", RpcTarget.All);
+    }
+
+    [PunRPC]
+    public void CheckWinner()
+    {
+        int max = 0;
+        for (int i = 0; i < playerScore.Length; i++)
+        {
+            if (i < playerCount)
+            {
+                if(PhotonNetwork.IsMasterClient)
+                {
+                    if(playerScore[i] > 0)
+                    {
+                        StartCoroutine(AddNewScore(playerName[i], playerScore[i]));
+                    }
+                }
+                player[i].GetComponent<PlayerController>().canMove = false;
+                player[i].GetComponent<Rigidbody>().isKinematic = true;
+                if (playerScore[i] >= max)
+                {
+                    max = playerScore[i];
+                    playerWinner = i;
+                }
+            }
+        }
+
+        winnerText.text = "THE WINNER IS " + playerName[playerWinner];
+        winnerText.color = playerColor[playerWinner];
+        winnerText.gameObject.SetActive(true);
+        Camera.main.transform.DOMove(player[playerWinner].GetComponent<PlayerController>().camPos.position, 1.5f).OnUpdate(()=> {
+            Camera.main.transform.LookAt(player[playerWinner].transform.position);
+        });
+    }
+
+    [PunRPC]
+    public void LeaveRoom()
+    {
+        PhotonNetwork.LeaveRoom(true);
+    }
+
+
+    public override void OnLeftRoom()
+    {
+        SceneManager.LoadScene("3_Lobby");
     }
 
     public void AddVolleyBall()
@@ -84,6 +155,15 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
         ball.Add(volleyObj);
     }
 
+    public void AddSeaShell()
+    {
+        PhotonNetwork.Instantiate(
+            seaShell.name,
+            new Vector3(Random.Range(topLeftLimit.position.x, bottomRightLimit.position.x), spawnY, Random.Range(topLeftLimit.position.z, bottomRightLimit.position.z)),
+            Quaternion.identity
+        );
+    }
+
     public void ShowPlayerScore()
     {
         for (int i = 0; i < playerScoreUI.Length; i++)
@@ -92,6 +172,8 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
             {
                 txtScore[i].text = playerScore[i].ToString();
                 txtName[i].text = playerName[i];
+                txtName[i].color = playerColor[i];
+                txtScore[i].color = playerColor[i];
             }
             playerScoreUI[i].SetActive(i < playerCount);
         }
@@ -116,4 +198,29 @@ public class GameHandler : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+
+    IEnumerator AddNewScore(string name, int score)
+    {
+        // Legacy approach :
+        //WWWForm form = new WWWForm();
+        //form.AddField("name", name);
+        //form.AddField("score", score);
+
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+        formData.Add(new MultipartFormDataSection("name", name));
+        formData.Add(new MultipartFormDataSection("score", score.ToString()));
+        formData.Add(new MultipartFormDataSection("baseUtcOffset", baseUtcOffset));
+
+        UnityWebRequest request = UnityWebRequest.Post(URL, formData);
+        yield return request.SendWebRequest();
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.Log(request.error);
+        }
+        else
+        {
+            scores = JsonUtility.FromJson<PlayerScore>(request.downloadHandler.text);
+        }
+    }
 }

@@ -23,11 +23,13 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public Button[] roomButton;
 
     public Button playButton;
+    public Button backButton;
     public TextMeshProUGUI txtWaiting;
 
     ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable();
 
     public GameObject roomSelectionUI;
+    bool isJoin = false;
 
     private void Awake()
     {
@@ -41,6 +43,22 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     void AssignMenuClick()
     {
+        backButton.onClick.AddListener(() => {
+            if (isJoin)
+            {
+                PhotonNetwork.LeaveRoom(true);
+                txtWaiting.gameObject.SetActive(false);
+                playButton.gameObject.SetActive(false);
+                roomSelectionUI.SetActive(true);
+                isJoin = false;
+            }
+            else
+            {
+                PhotonNetwork.Disconnect();
+                UnityEngine.SceneManagement.SceneManager.LoadScene("2_Loading");
+            }
+        });
+
         for (int i = 0; i < roomButton.Length; i++)
         {
             int index = 1;
@@ -58,6 +76,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             MaxPlayers = 4
         };
         PhotonNetwork.JoinOrCreateRoom(roomName[index], roomOptions, TypedLobby.Default);
+        isJoin = true;
     }
 
     public override void OnJoinedRoom()
@@ -69,16 +88,28 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         txtWaiting.gameObject.SetActive(true);
     }
 
+    public override void OnConnectedToMaster()
+    {
+        PhotonNetwork.JoinLobby();
+    }
+
     private void Update()
     {
-        if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount >= 2)
+        if(!PhotonNetwork.IsConnected)
+            return;
+
+        if(isJoin)
         {
-            txtWaiting.gameObject.SetActive(false);
-            playButton.gameObject.SetActive(true);
-        }
-        else
-        {
-            playButton.gameObject.SetActive(false);
+            if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount >= 2)
+            {
+                txtWaiting.gameObject.SetActive(false);
+                playButton.gameObject.SetActive(true);
+            }
+            else
+            {
+                txtWaiting.gameObject.SetActive(true);
+                playButton.gameObject.SetActive(false);
+            }
         }
     }
 
