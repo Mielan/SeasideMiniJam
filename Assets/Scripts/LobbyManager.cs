@@ -38,6 +38,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     void Start()
     {
+        roomSelectionUI.SetActive(true);
+        playButton.gameObject.SetActive(false);
+        txtWaiting.gameObject.SetActive(false);
         AssignMenuClick();
     }
 
@@ -109,6 +112,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             {
                 txtWaiting.gameObject.SetActive(true);
                 playButton.gameObject.SetActive(false);
+                roomSelectionUI.SetActive(false);
             }
         }
     }
